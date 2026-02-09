@@ -306,8 +306,8 @@
             });
 
             logoutBtn.addEventListener('click', async () => {
-                await authenticatedFetch('http://127.0.0.1:5000/api/logout', { method: 'POST' });
-                window.location.href = 'http://127.0.0.1:5000/';
+                await authenticatedFetch('http://127.0.0.1:5000/api/logout' || 'https://ai-music-lstm-1.onrender.com/api/logout', { method: 'POST' });
+                window.location.href = 'http://127.0.0.1:5000/' || 'https://ai-music-lstm-1.onrender.com';
             });
 
             // Start

@@ -216,7 +216,7 @@
                         genre: genreConvertSelect.value
                     };
 
-                    fetch('http://127.0.0.1:5000/api/convert', {
+                    fetch('http://127.0.0.1:5000/api/convert' || 'https://ai-music-lstm-1.onrender.com/api/convert', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify(payload)
