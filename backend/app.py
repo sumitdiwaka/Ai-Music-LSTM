@@ -1,10 +1,325 @@
+# from flask import Flask, jsonify
+# from flask_cors import CORS
+# import pickle
+# import numpy as np
+# from music21 import instrument, note, chord, stream
+# from keras.models import Sequential
+# from keras.layers import Dense, Dropout, LSTM, Activation
+# import os
+# import base64
+
+# # --- Initialize the Flask App ---
+# # --- FIX: Point Flask to the frontend folder to serve the index.html file ---
+# app = Flask(__name__, static_folder='../frontend', static_url_path='/')
+# CORS(app) # Allow requests from the front-end
+
+# # --- Global variables to hold the model and data ---
+# MODEL = None
+# NOTES = None
+# PITCHNAMES = None
+# N_VOCAB = 0
+
+# def create_network(n_vocab):
+#     """ Re-create the structure of the neural network """
+#     # This structure MUST be identical to the one in train.py
+#     model = Sequential()
+#     model.add(LSTM(
+#         256,
+#         input_shape=(100, 1), # (sequence_length, n_features)
+#         recurrent_dropout=0.2,
+#         return_sequences=True
+#     ))
+#     model.add(LSTM(256, return_sequences=True, recurrent_dropout=0.2))
+#     model.add(LSTM(256))
+#     model.add(Dense(128))
+#     model.add(Dropout(0.2))
+#     model.add(Dense(n_vocab))
+#     model.add(Activation('softmax'))
+#     model.compile(loss='categorical_crossentropy', optimizer='rmsprop')
+#     return model
+
+# def load_music_generation_model():
+#     """Load the trained model and notes data."""
+#     global MODEL, NOTES, PITCHNAMES, N_VOCAB
+
+#     print("--- Loading model and notes data ---")
+    
+#     # Load the notes used to train the model
+#     notes_path = os.path.join('model', 'notes')
+#     with open(notes_path, 'rb') as filepath:
+#         NOTES = pickle.load(filepath)
+
+#     # Use the same slice of data as in the training script
+#     NOTES = NOTES[:20000]
+
+#     PITCHNAMES = sorted(list(set(NOTES)))
+#     N_VOCAB = len(set(NOTES))
+    
+#     # Re-create the model structure
+#     MODEL = create_network(N_VOCAB)
+    
+#     # Load the trained weights
+#     weights_path = os.path.join('model', 'weights-best-fast.keras')
+#     MODEL.load_weights(weights_path)
+    
+#     print("--- Model and data loaded successfully ---")
+
+
+# def generate_notes(model, network_input, pitchnames, n_vocab):
+#     """ Generate notes from the neural network based on a sequence of notes """
+#     start = np.random.randint(0, len(network_input)-1)
+#     int_to_note = dict((number, note) for number, note in enumerate(pitchnames))
+#     pattern = network_input[start]
+#     prediction_output = []
+
+#     # generate 200 notes (reduced for faster API response)
+#     for note_index in range(200):
+#         prediction_input = np.reshape(pattern, (1, len(pattern), 1))
+#         prediction_input = prediction_input / float(n_vocab)
+#         prediction = model.predict(prediction_input, verbose=0)
+#         index = np.argmax(prediction)
+#         result = int_to_note[index]
+#         prediction_output.append(result)
+#         pattern.append(index)
+#         pattern = pattern[1:len(pattern)]
+
+#     return prediction_output
+
+# def create_midi_from_notes(prediction_output, filename="output.mid"):
+#     """ convert the output from the prediction to notes and create a midi file """
+#     offset = 0
+#     output_notes = []
+
+#     for pattern in prediction_output:
+#         if ('.' in pattern) or pattern.isdigit():
+#             notes_in_chord = pattern.split('.')
+#             notes = []
+#             for current_note in notes_in_chord:
+#                 new_note = note.Note(int(current_note))
+#                 new_note.instrument = instrument.Piano()
+#                 notes.append(new_note)
+#             new_chord = chord.Chord(notes)
+#             new_chord.offset = offset
+#             output_notes.append(new_chord)
+#         else:
+#             new_note = note.Note(pattern)
+#             new_note.offset = offset
+#             new_note.instrument = instrument.Piano()
+#             output_notes.append(new_note)
+#         offset += 0.5
+
+#     midi_stream = stream.Stream(output_notes)
+#     output_dir = 'generated_music'
+#     if not os.path.exists(output_dir):
+#         os.makedirs(output_dir)
+#     output_path = os.path.join(output_dir, filename)
+#     midi_stream.write('midi', fp=output_path)
+#     return output_path
+
+# # --- FIX: Add a route to serve the main index.html file ---
+# @app.route('/')
+# def serve_index():
+#     return app.send_static_file('index.html')
+
+# # --- API Endpoint ---
+# @app.route('/generate', methods=['GET'])
+# def generate_music_endpoint():
+#     """ The API endpoint that the front-end will call """
+#     global MODEL, NOTES, PITCHNAMES, N_VOCAB
+
+#     if MODEL is None:
+#         return jsonify({'error': 'Model is not loaded yet!'}), 500
+
+#     # Prepare sequences for generation
+#     sequence_length = 100
+#     note_to_int = dict((note, number) for number, note in enumerate(PITCHNAMES))
+#     network_input = []
+#     for i in range(0, len(NOTES) - sequence_length, 1):
+#         sequence_in = NOTES[i:i + sequence_length]
+#         network_input.append([note_to_int[char] for char in sequence_in])
+
+#     # Generate notes
+#     prediction_output = generate_notes(MODEL, network_input, PITCHNAMES, N_VOCAB)
+    
+#     # Create a MIDI file
+#     midi_path = create_midi_from_notes(prediction_output)
+
+#     # Read the MIDI file and encode it in Base64
+#     with open(midi_path, 'rb') as midi_file:
+#         midi_base64 = base64.b64encode(midi_file.read()).decode('utf-8')
+
+#     # Return the Base64 encoded MIDI file as a JSON response
+#     return jsonify({'midi': midi_base64})
+
+# if __name__ == '__main__':
+#     # Load the model when the server starts
+#     load_music_generation_model()
+#     # Run the Flask app
+#     app.run(debug=True, port=5000)
+
+
+
+# import os
+# import base64
+# import pickle
+# import numpy as np
+# from flask import Flask, jsonify
+# from flask_cors import CORS
+# from music21 import instrument, note, chord, stream
+# from keras.models import Sequential
+# from keras.layers import Dense, Dropout, LSTM, Activation
+
+# # --- 1. APP SETUP ---
+# # This configures the Flask server to serve your index.html file.
+# app = Flask(__name__, static_folder='../frontend', static_url_path='/')
+# CORS(app) # Allows the frontend to make requests to this backend
+
+# # --- 2. GLOBAL VARIABLES FOR THE AI MODEL ---
+# # These are loaded once to be fast and efficient.
+# MODEL = None
+# NOTES = None
+# PITCHNAMES = None
+# N_VOCAB = 0
+
+# # --- 3. AI MODEL & MUSIC GENERATION LOGIC ---
+
+# def create_network(n_vocab):
+#     """
+#     Re-creates the exact same neural network architecture that was used for training.
+#     This is essential for loading the saved weights correctly.
+#     """
+#     model = Sequential([
+#         LSTM(256, input_shape=(100, 1), recurrent_dropout=0.2, return_sequences=True),
+#         LSTM(256, return_sequences=True, recurrent_dropout=0.2),
+#         LSTM(256),
+#         Dense(128),
+#         Dropout(0.2),
+#         Dense(n_vocab),
+#         Activation('softmax')
+#     ])
+#     model.compile(loss='categorical_crossentropy', optimizer='rmsprop')
+#     return model
+
+# def load_music_generation_model():
+#     """
+#     Loads the trained AI model and the necessary notes data into memory
+#     only once when the server starts.
+#     """
+#     global MODEL, NOTES, PITCHNAMES, N_VOCAB
+#     print("--- Loading AI model and notes data ---")
+    
+#     # Load the processed notes vocabulary
+#     with open(os.path.join('model', 'notes'), 'rb') as f:
+#         NOTES = pickle.load(f)[:20000] # Use the same slice as in training
+        
+#     PITCHNAMES = sorted(list(set(NOTES)))
+#     N_VOCAB = len(PITCHNAMES)
+    
+#     # Create the model structure and load the trained weights
+#     MODEL = create_network(N_VOCAB)
+#     MODEL.load_weights(os.path.join('model', 'weights-best-fast.keras'))
+    
+#     print("--- AI Model and data loaded successfully ---")
+
+# def generate_notes(model, network_input, pitchnames, n_vocab):
+#     """
+#     Generates a sequence of notes using the trained AI model.
+#     """
+#     # Pick a random starting sequence from the data
+#     start = np.random.randint(0, len(network_input) - 1)
+#     int_to_note = {num: note for num, note in enumerate(pitchnames)}
+#     pattern = network_input[start]
+#     prediction_output = []
+
+#     # Generate 200 notes
+#     for _ in range(200):
+#         prediction_input = np.reshape(pattern, (1, len(pattern), 1)) / float(n_vocab)
+#         prediction = model.predict(prediction_input, verbose=0)
+        
+#         # Get the most likely next note
+#         index = np.argmax(prediction)
+#         result = int_to_note[index]
+#         prediction_output.append(result)
+        
+#         # Update the pattern for the next prediction
+#         pattern.append(index)
+#         pattern = pattern[1:]
+        
+#     return prediction_output
+
+# def create_midi_from_notes(prediction_output, filename="output.mid"):
+#     """
+#     Converts the list of generated notes into a MIDI file and returns
+#     its Base64 text representation for sending over the web.
+#     """
+#     offset = 0
+#     output_notes = []
+    
+#     # Create music21 objects for each note or chord
+#     for pattern in prediction_output:
+#         if ('.' in pattern) or pattern.isdigit(): # It's a chord
+#             notes_in_chord = pattern.split('.')
+#             notes = [note.Note(int(n)) for n in notes_in_chord]
+#             for n in notes:
+#                 n.instrument = instrument.Piano()
+#             new_chord = chord.Chord(notes)
+#             new_chord.offset = offset
+#             output_notes.append(new_chord)
+#         else: # It's a single note
+#             new_note = note.Note(pattern)
+#             new_note.offset = offset
+#             new_note.instrument = instrument.Piano()
+#             output_notes.append(new_note)
+#         offset += 0.5
+    
+#     midi_stream = stream.Stream(output_notes)
+    
+#     # Save the MIDI file temporarily to encode it
+#     output_dir = 'generated_music'
+#     if not os.path.exists(output_dir):
+#         os.makedirs(output_dir)
+#     output_path = os.path.join(output_dir, filename)
+#     midi_stream.write('midi', fp=output_path)
+    
+#     # Read the file and encode it as Base64
+#     with open(output_path, 'rb') as f:
+#         midi_base64 = base64.b64encode(f.read()).decode('utf-8')
+        
+#     return midi_base64
+
+# # --- 4. PAGE & API ROUTES ---
+
+# @app.route('/')
+# def serve_index():
+#     """ Serves the main music generator page (index.html) """
+#     return app.send_static_file('index.html')
+
+# @app.route('/generate', methods=['GET'])
+# def generate_music_endpoint():
+#     """ The API endpoint that the frontend calls to generate music """
+#     if MODEL is None:
+#         return jsonify({'error': 'Model is not loaded yet!'}), 500
+
+#     # Prepare the input sequences from our notes data
+#     note_to_int = {note: num for num, note in enumerate(PITCHNAMES)}
+#     network_input = [[note_to_int[char] for char in NOTES[i:i + 100]] for i in range(len(NOTES) - 100)]
+    
+#     # Generate the music and get the Base64 MIDI data
+#     prediction_output = generate_notes(MODEL, network_input, PITCHNAMES, N_VOCAB)
+#     midi_base64 = create_midi_from_notes(prediction_output)
+    
+#     # Send the MIDI data back to the frontend
+#     return jsonify({'midi': midi_base64})
+
+# # --- 5. RUN THE APP ---
+# if __name__ == '__main__':
+#     load_music_generation_model()
+#     app.run(debug=True, port=5000)
 
 import os
 import base64
 import pickle
 import numpy as np
-from midi2audio import FluidSynth
-import tempfile
 from flask import Flask, jsonify, request
 from flask_cors import CORS
 from flask_sqlalchemy import SQLAlchemy
@@ -117,7 +432,7 @@ def update_user_profile():
 @login_required
 def get_user_songs():
     songs = Song.query.filter_by(user_id=current_user.id).order_by(Song.date_created.desc()).all()
-    song_list = [{'id': s.id, 'title': s.title, 'date_created': s.date_created.strftime('%b %d, %Y'), 'midi_data': s.midi_data,'midi_url': f'/api/songs/download/{s.id}','audio_url': f'/api/songs/play/{s.id}' } for s in songs]
+    song_list = [{'id': s.id, 'title': s.title, 'date_created': s.date_created.strftime('%b %d, %Y'), 'midi_data': s.midi_data} for s in songs]
     return jsonify(song_list)
 
 @app.route('/api/songs/delete/<int:song_id>', methods=['DELETE'])
@@ -129,50 +444,6 @@ def delete_song(song_id):
         db.session.commit()
         return jsonify({'message': 'Song deleted successfully.'}), 200
     return jsonify({'message': 'Song not found or you do not have permission to delete it.'}), 404
-
-
-@app.route('/api/songs/download/<int:song_id>', methods=['GET'])
-@login_required
-def download_song(song_id):
-    song = Song.query.get(song_id)
-    if song and song.user_id == current_user.id:
-        midi_data = base64.b64decode(song.midi_data)
-        return midi_data, 200, {
-            'Content-Type': 'audio/midi',
-            'Content-Disposition': f'attachment; filename="{song.title}.mid"'
-        }
-    return jsonify({'message': 'Song not found or you do not have permission to access it.'}), 404
-
-@app.route('/api/songs/play/<int:song_id>', methods=['GET'])
-@login_required
-def play_song(song_id):
-    song = Song.query.get(song_id)
-    if song and song.user_id == current_user.id:
-        try:
-            # Convert MIDI to WAV
-            midi_data = base64.b64decode(song.midi_data)
-            
-            with tempfile.NamedTemporaryFile(suffix='.mid', delete=False) as midi_file:
-                midi_file.write(midi_data)
-                midi_path = midi_file.name
-            
-            wav_path = midi_path.replace('.mid', '.wav')
-            fs = FluidSynth()
-            fs.midi_to_audio(midi_path, wav_path)
-            
-            with open(wav_path, 'rb') as wav_file:
-                wav_data = wav_file.read()
-            
-            os.remove(midi_path)
-            os.remove(wav_path)
-            
-            return wav_data, 200, {
-                'Content-Type': 'audio/wav',
-                'Content-Disposition': f'inline; filename="{song.title}.wav"'
-            }
-        except Exception as e:
-            return jsonify({'message': f'Error converting MIDI to audio: {str(e)}'}), 500
-    return jsonify({'message': 'Song not found or no permission'}), 404
 
 # --- 5. PAGE SERVING ROUTES ---
 @app.route('/')
@@ -397,8 +668,3 @@ if __name__ == '__main__':
     load_all_models()
     app.run(debug=True, port=5000)
 
-# if __name__ == '__main__':
-#     with app.app_context():
-#         db.drop_all()
-#         db.create_all()
-#     app.run(debug=True)
