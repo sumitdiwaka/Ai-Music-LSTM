@@ -333,7 +333,8 @@ from datetime import datetime
 
 # --- 1. APP & DATABASE SETUP ---
 app = Flask(__name__, static_folder='../frontend', static_url_path='/')
-CORS(app, supports_credentials=True)
+# CORS(app, supports_credentials=True)
+CORS(app, resources={r"/*": {"origins": "*"}}, supports_credentials=True)
 app.config['SECRET_KEY'] = 'a-super-secret-key-that-you-should-change'
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///users.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
@@ -662,9 +663,17 @@ def convert_style_endpoint():
     return jsonify({'midi': midi_base64_out, 'title': song_title})
 
 # --- 8. INITIALIZATION & RUN ---
+# if __name__ == '__main__':
+#     with app.app_context():
+#         db.create_all()
+#     load_all_models()
+#     app.run(debug=True, port=5000)
+
 if __name__ == '__main__':
     with app.app_context():
         db.create_all()
-    load_all_models()
-    app.run(debug=True, port=5000)
+    load_music_generation_model()
+    # Render provides a PORT environment variable
+    port = int(os.environ.get('PORT', 5000))
+    app.run(host='0.0.0.0', port=port)
 

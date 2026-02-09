@@ -6,72 +6,51 @@
     <title>Dashboard - AI Music Generation</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Tone.js and Midi.js for playback -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.7.77/Tone.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tonejs/midi"></script>
     <style>
-        body {
-            font-family: 'Inter', sans-serif;
-        }
-        .glassmorphism {
-            background: rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-        }
-        .modal-backdrop {
-            background-color: rgba(0,0,0,0.7);
-        }
-        .audio-controls {
-            display: none;
-        }
+        body { font-family: 'Inter', sans-serif; }
+        .glassmorphism { background: rgba(255, 255, 255, 0.1); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.2); }
+        .modal-backdrop { background-color: rgba(0,0,0,0.7); }
     </style>
 </head>
 <body class="bg-gray-900 text-white">
 
     <div class="min-h-screen" style="background-image: url('https://www.transparenttextures.com/patterns/stardust.png');">
-        <!-- Header -->
         <header class="bg-gray-900/50 backdrop-blur-sm shadow-lg sticky top-0 z-20">
             <nav class="container mx-auto px-6 py-4 flex justify-between items-center">
-                <h1 class="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-purple-400 to-pink-600">
-                    My Dashboard
-                </h1>
+                <h1 class="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-purple-400 to-pink-600">My Dashboard</h1>
                 <div class="flex items-center space-x-4">
                     <span id="welcome-message" class="text-gray-300 hidden md:block">Welcome!</span>
-                    <button id="logout-btn" class="bg-pink-600 hover:bg-pink-700 text-white text-sm font-bold py-2 px-4 rounded-full">
-                        Logout
-                    </button>
+                    <button id="logout-btn" class="bg-pink-600 hover:bg-pink-700 text-white text-sm font-bold py-2 px-4 rounded-full">Logout</button>
                 </div>
             </nav>
         </header>
 
         <main class="container mx-auto p-6">
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                
-                <!-- Left Column: User Profile -->
+                <!-- Profile Section -->
                 <div class="lg:col-span-1">
                     <div class="glassmorphism rounded-2xl p-6 text-center">
                         <img id="profile-photo" class="w-32 h-32 rounded-full object-cover border-4 border-purple-500 mx-auto mb-4" src="https://placehold.co/128x128/374151/a78bfa?text=U" alt="User profile photo">
                         <h2 id="profile-fullname" class="text-2xl font-bold">User Name</h2>
                         <p id="profile-email" class="text-gray-400">user@example.com</p>
                         <p id="profile-phone" class="text-gray-400 text-sm mt-1"></p>
-                        
                         <button id="update-profile-btn" class="mt-4 text-sm text-purple-400 hover:underline">Update Profile</button>
-                        
-                        <a href="http://127.0.0.1:5000/generator" class="mt-6 inline-block w-full text-white bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 focus:ring-4 focus:outline-none focus:ring-purple-800 font-medium rounded-lg text-sm px-5 py-2.5 text-center">
-                           Generate New Music
-                        </a>
+                        <a href="http://127.0.0.1:5000/generator" class="mt-6 inline-block w-full text-white bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 focus:ring-4 focus:outline-none focus:ring-purple-800 font-medium rounded-lg text-sm px-5 py-2.5 text-center">Generate New Music</a>
                     </div>
                 </div>
 
-                <!-- Right Column: Generated Songs -->
+                <!-- Songs List Section -->
                 <div class="lg:col-span-2">
                     <div class="glassmorphism rounded-2xl p-6">
                         <h3 class="text-2xl font-bold mb-6">My Generated Songs</h3>
                         <div id="song-list" class="space-y-4">
-                            <!-- Songs will be dynamically inserted here -->
                             <p id="no-songs-message" class="text-gray-400">You haven't generated any songs yet. Click "Generate New Music" to start!</p>
                         </div>
                     </div>
                 </div>
-
             </div>
         </main>
     </div>
@@ -82,56 +61,40 @@
             <h2 class="text-2xl font-bold mb-6 text-center">Update Your Profile</h2>
             <form id="update-form">
                 <div class="flex flex-col items-center mb-6">
-                    <img id="update-photo-preview" class="w-24 h-24 rounded-full object-cover border-2 border-gray-600 mb-2" src="https://placehold.co/96x96/374151/a78bfa?text=Photo" alt="Profile preview">
+                    <img id="update-photo-preview" class="w-24 h-24 rounded-full object-cover border-2 border-gray-600 mb-2" src="https://placehold.co/96x96/374151/a78bfa?text=Photo">
                     <label for="update-photo-upload" class="cursor-pointer bg-gray-700 hover:bg-gray-600 text-white text-xs font-bold py-1 px-3 rounded-full">Change Photo</label>
                     <input id="update-photo-upload" type="file" class="hidden" accept="image/*">
                 </div>
-                <div class="mb-4">
-                    <label for="update-fullname" class="block mb-2 text-sm font-medium text-gray-300">Full Name</label>
-                    <input type="text" id="update-fullname" class="bg-gray-800 border border-gray-700 text-white text-sm rounded-lg block w-full p-2.5" required>
-                </div>
-                <div class="mb-4">
-                    <label for="update-phone" class="block mb-2 text-sm font-medium text-gray-300">Phone Number</label>
-                    <input type="tel" id="update-phone" class="bg-gray-800 border border-gray-700 text-white text-sm rounded-lg block w-full p-2.5">
-                </div>
+                <div class="mb-4"><label class="block mb-2 text-sm text-gray-300">Full Name</label><input type="text" id="update-fullname" class="bg-gray-800 border border-gray-700 text-white text-sm rounded-lg block w-full p-2.5" required></div>
+                <div class="mb-4"><label class="block mb-2 text-sm text-gray-300">Phone</label><input type="tel" id="update-phone" class="bg-gray-800 border border-gray-700 text-white text-sm rounded-lg block w-full p-2.5"></div>
                 <hr class="border-gray-600 my-6">
-                <div class="mb-4">
-                    <label for="current-password" class="block mb-2 text-sm font-medium text-gray-300">Current Password (to change password)</label>
-                    <input type="password" id="current-password" class="bg-gray-800 border border-gray-700 text-white text-sm rounded-lg block w-full p-2.5">
-                </div>
-                <div class="mb-6">
-                    <label for="new-password" class="block mb-2 text-sm font-medium text-gray-300">New Password</label>
-                    <input type="password" id="new-password" class="bg-gray-800 border border-gray-700 text-white text-sm rounded-lg block w-full p-2.5">
-                </div>
-                <div class="flex items-center justify-end space-x-4 mt-8">
+                <div class="mb-4"><label class="block mb-2 text-sm text-gray-300">Current Password</label><input type="password" id="current-password" class="bg-gray-800 border border-gray-700 text-white text-sm rounded-lg block w-full p-2.5"></div>
+                <div class="mb-6"><label class="block mb-2 text-sm text-gray-300">New Password</label><input type="password" id="new-password" class="bg-gray-800 border border-gray-700 text-white text-sm rounded-lg block w-full p-2.5"></div>
+                <div class="flex justify-end space-x-4 mt-8">
                     <button type="button" id="cancel-update-btn" class="text-gray-400 hover:text-white">Cancel</button>
-                    <button type="submit" class="text-white bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 font-medium rounded-lg text-sm px-5 py-2.5 text-center">Save Changes</button>
+                    <button type="submit" class="text-white bg-gradient-to-r from-purple-500 to-pink-500 font-medium rounded-lg text-sm px-5 py-2.5">Save Changes</button>
                 </div>
             </form>
         </div>
     </div>
 
-    <!-- Delete Confirmation Modal -->
+    <!-- Delete Modal -->
     <div id="delete-modal" class="fixed inset-0 z-30 flex items-center justify-center p-4 modal-backdrop hidden">
         <div class="glassmorphism rounded-2xl shadow-lg p-6 w-full max-w-md">
             <h3 class="text-xl font-bold mb-4">Delete Song</h3>
-            <p id="delete-message" class="mb-6">Are you sure you want to delete this song?</p>
+            <p id="delete-message" class="mb-6">Are you sure?</p>
             <div class="flex justify-end space-x-3">
-                <button id="cancel-delete-btn" class="px-4 py-2 text-gray-300 hover:text-white">Cancel</button>
-                <button id="confirm-delete-btn" class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded">Delete</button>
+                <button id="cancel-delete-btn" class="px-4 py-2 text-gray-300">Cancel</button>
+                <button id="confirm-delete-btn" class="px-4 py-2 bg-red-600 text-white rounded">Delete</button>
             </div>
         </div>
     </div>
-    
-    <!-- Message container for non-modal messages -->
-    <div id="message-container" class="fixed top-5 right-5 z-40"></div>
 
-    <!-- Hidden audio element for preview -->
-    <audio id="audio-player" class="audio-controls"></audio>
+    <div id="message-container" class="fixed top-5 right-5 z-40"></div>
 
     <script>
         document.addEventListener('DOMContentLoaded', async function() {
-            // --- DOM Elements ---
+            // DOM Elements
             const welcomeMessage = document.getElementById('welcome-message');
             const profilePhoto = document.getElementById('profile-photo');
             const profileFullname = document.getElementById('profile-fullname');
@@ -144,218 +107,180 @@
             const updateModal = document.getElementById('update-modal');
             const cancelUpdateBtn = document.getElementById('cancel-update-btn');
             const updateForm = document.getElementById('update-form');
-            const messageContainer = document.getElementById('message-container');
             const deleteModal = document.getElementById('delete-modal');
             const cancelDeleteBtn = document.getElementById('cancel-delete-btn');
             const confirmDeleteBtn = document.getElementById('confirm-delete-btn');
             const deleteMessage = document.getElementById('delete-message');
-            const audioPlayer = document.getElementById('audio-player');
+            const messageContainer = document.getElementById('message-container');
 
             let newPhotoBase64 = null;
             let currentSongIdToDelete = null;
-            let currentlyPlayingSong = null;
+            let synth = null;
+            let isPlaying = false;
 
             // --- Helper Functions ---
             async function authenticatedFetch(url, options = {}) {
                 options.credentials = 'include';
-                const response = await fetch(url, options);
-                if (response.redirected || response.status === 401) {
-                    window.location.href = 'http://127.0.0.1:5000/';
+                try {
+                    const response = await fetch(url, options);
+                    if (response.redirected || response.status === 401) {
+                        window.location.href = 'http://127.0.0.1:5000/';
+                        return null;
+                    }
+                    return response;
+                } catch (err) {
+                    console.error("Network Error:", err);
                     return null;
                 }
-                return response;
             }
 
             function showToast(message, type) {
                 const toast = document.createElement('div');
                 toast.textContent = message;
-                const baseClasses = 'px-4 py-2 rounded-md shadow-lg text-sm font-medium';
-                const typeClasses = type === 'success' 
-                    ? 'bg-green-500 text-white' 
-                    : 'bg-red-500 text-white';
-                toast.className = `${baseClasses} ${typeClasses}`;
+                toast.className = `px-4 py-2 rounded-md shadow-lg text-sm font-medium ${type === 'success' ? 'bg-green-500 text-white' : 'bg-red-500 text-white'}`;
                 messageContainer.appendChild(toast);
-                setTimeout(() => {
-                    toast.remove();
-                }, 3000);
-            }
-
-            function stopCurrentlyPlaying() {
-                if (currentlyPlayingSong) {
-                    const prevPlayBtn = document.querySelector(`button[data-song-id="${currentlyPlayingSong}"] .play-icon`);
-                    if (prevPlayBtn) {
-                        prevPlayBtn.innerHTML = `<path d="M6.3 2.841A1.5 1.5 0 004 4.11V15.89a1.5 1.5 0 002.3 1.269l9.344-5.89a1.5 1.5 0 000-2.538L6.3 2.84z"/>`;
-                    }
-                    audioPlayer.pause();
-                    currentlyPlayingSong = null;
-                }
+                setTimeout(() => toast.remove(), 3000);
             }
 
             // --- Main Data Loading ---
             async function loadDashboardData() {
-                try {
-                    const userResponse = await authenticatedFetch('http://127.0.0.1:5000/api/user');
-                    if (!userResponse) return;
-                    const userData = await userResponse.json();
-                    
-                    welcomeMessage.textContent = `Welcome, ${userData.fullname.split(' ')[0]}!`;
-                    profileFullname.textContent = userData.fullname;
-                    profileEmail.textContent = userData.email;
-                    profilePhone.textContent = userData.phone || '';
-                    if (userData.profile_photo) {
-                        profilePhoto.src = userData.profile_photo;
-                        document.getElementById('update-photo-preview').src = userData.profile_photo;
-                    }
-                    document.getElementById('update-fullname').value = userData.fullname;
-                    document.getElementById('update-phone').value = userData.phone || '';
+                const userRes = await authenticatedFetch('http://127.0.0.1:5000/api/user');
+                if (!userRes) return;
+                const userData = await userRes.json();
 
-                    const songsResponse = await authenticatedFetch('http://127.0.0.1:5000/api/songs');
-                    if (!songsResponse) return;
-                    const songs = await songsResponse.json();
+                welcomeMessage.textContent = `Welcome, ${userData.fullname.split(' ')[0]}!`;
+                profileFullname.textContent = userData.fullname;
+                profileEmail.textContent = userData.email;
+                profilePhone.textContent = userData.phone || '';
+                if (userData.profile_photo) {
+                    profilePhoto.src = userData.profile_photo;
+                    document.getElementById('update-photo-preview').src = userData.profile_photo;
+                }
+                document.getElementById('update-fullname').value = userData.fullname;
+                document.getElementById('update-phone').value = userData.phone || '';
 
-                    if (songs && songs.length > 0) {
-                        noSongsMessage.style.display = 'none';
-                        songList.innerHTML = '';
-                        songs.forEach(song => {
-                            const songElement = document.createElement('div');
-                            songElement.className = 'bg-gray-800/50 p-4 rounded-lg flex items-center justify-between';
-                            songElement.innerHTML = `
-                                <div>
-                                    <p class="font-semibold">${song.title}</p>
-                                    <p class="text-xs text-gray-400">Generated on: ${song.date_created}</p>
-                                </div>
-                                <div class="flex items-center space-x-3">
-                                    <button class="preview-btn p-2 rounded-full bg-green-500 hover:bg-green-600 text-white" title="Preview" data-song-id="${song.id}" data-audio-url="${song.audio_url}">
-                                        <svg class="w-5 h-5 play-icon" fill="currentColor" viewBox="0 0 20 20">
-                                            <path d="M6.3 2.841A1.5 1.5 0 004 4.11V15.89a1.5 1.5 0 002.3 1.269l9.344-5.89a1.5 1.5 0 000-2.538L6.3 2.84z"/>
-                                        </svg>
-                                    </button>
-                                    <a href="${song.midi_url}" download class="download-btn p-2 rounded-full bg-blue-500 hover:bg-blue-600 text-white" title="Download MIDI">
-                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
-                                        </svg>
-                                    </a>
-                                    <button class="delete-btn p-2 rounded-full bg-red-600 hover:bg-red-700 text-white" title="Delete" data-song-id="${song.id}">
-                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
-                                        </svg>
-                                    </button>
-                                </div>
-                            `;
-                            songList.appendChild(songElement);
-                        });
-                    }
-                } catch (error) {
-                    console.error('Failed to load dashboard data:', error);
+                const songsRes = await authenticatedFetch('http://127.0.0.1:5000/api/songs');
+                if (!songsRes) return;
+                const songs = await songsRes.json();
+
+                if (songs.length > 0) {
+                    noSongsMessage.style.display = 'none';
+                    songList.innerHTML = '';
+                    songs.forEach(song => {
+                        const div = document.createElement('div');
+                        div.className = 'bg-gray-800/50 p-4 rounded-lg flex items-center justify-between';
+                        div.innerHTML = `
+                            <div>
+                                <p class="font-semibold">${song.title}</p>
+                                <p class="text-xs text-gray-400">Generated on: ${song.date_created}</p>
+                            </div>
+                            <div class="flex items-center space-x-3">
+                                <button class="play-btn p-2 rounded-full bg-green-500 hover:bg-green-600 text-white" title="Play" data-midi="${song.midi_data}">
+                                    <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path d="M6.3 2.841A1.5 1.5 0 004 4.11V15.89a1.5 1.5 0 002.3 1.269l9.344-5.89a1.5 1.5 0 000-2.538L6.3 2.84z"/></svg>
+                                </button>
+                                <button class="download-btn p-2 rounded-full bg-blue-500 hover:bg-blue-600 text-white" title="Download" data-midi="${song.midi_data}" data-title="${song.title}">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                                </button>
+                                <button class="delete-btn p-2 rounded-full bg-red-600 hover:bg-red-700 text-white" title="Delete" data-song-id="${song.id}">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                                </button>
+                            </div>
+                        `;
+                        songList.appendChild(div);
+                    });
                 }
             }
 
-            // --- Delete Confirmation Modal Handlers ---
-            cancelDeleteBtn.addEventListener('click', () => {
-                deleteModal.classList.add('hidden');
-                currentSongIdToDelete = null;
+            // --- Event Delegation (One listener for all buttons) ---
+            songList.addEventListener('click', async (e) => {
+                const btn = e.target.closest('button');
+                if (!btn) return;
+
+                // 1. Handle Download Click
+                if (btn.classList.contains('download-btn')) {
+                    const midiBase64 = btn.dataset.midi;
+                    const title = btn.dataset.title;
+                    if (midiBase64) {
+                        const link = document.createElement('a');
+                        link.href = `data:audio/midi;base64,${midiBase64}`;
+                        link.download = `${title}.mid`;
+                        document.body.appendChild(link);
+                        link.click();
+                        document.body.removeChild(link);
+                    } else {
+                        showToast('Error: No MIDI data found.', 'error');
+                    }
+                }
+                
+                // 2. Handle Delete Click
+                else if (btn.classList.contains('delete-btn')) {
+                    currentSongIdToDelete = btn.dataset.songId;
+                    document.getElementById('delete-message').textContent = "Are you sure you want to delete this song?";
+                    deleteModal.classList.remove('hidden');
+                }
+
+                // 3. Handle Play Click (Simple Preview)
+                else if (btn.classList.contains('play-btn')) {
+                    const midiBase64 = btn.dataset.midi;
+                    if (!midiBase64) return;
+                    
+                    await Tone.start();
+                    if(isPlaying) {
+                        Tone.Transport.stop();
+                        Tone.Transport.cancel();
+                        isPlaying = false;
+                        return; // Stop if already playing
+                    }
+
+                    // Decode and play
+                    const binaryString = atob(midiBase64);
+                    const len = binaryString.length;
+                    const bytes = new Uint8Array(len);
+                    for (let i = 0; i < len; i++) { bytes[i] = binaryString.charCodeAt(i); }
+                    const midi = new Midi(bytes.buffer);
+                    
+                    if(!synth) synth = new Tone.PolySynth(Tone.Synth).toDestination();
+                    
+                    const now = Tone.now() + 0.5;
+                    midi.tracks.forEach(track => {
+                        track.notes.forEach(note => {
+                            synth.triggerAttackRelease(note.name, note.duration, note.time + now, note.velocity);
+                        });
+                    });
+                    isPlaying = true;
+                    setTimeout(() => isPlaying = false, midi.duration * 1000);
+                }
             });
 
+            // Delete Modal Logic
+            cancelDeleteBtn.addEventListener('click', () => deleteModal.classList.add('hidden'));
             confirmDeleteBtn.addEventListener('click', async () => {
                 if (currentSongIdToDelete) {
-                    try {
-                        const response = await authenticatedFetch(`/api/songs/delete/${currentSongIdToDelete}`, { 
-                            method: 'DELETE' 
-                        });
-                        if (response && response.ok) {
-                            showToast('Song deleted successfully.', 'success');
-                            loadDashboardData();
-                        } else {
-                            showToast('Failed to delete song.', 'error');
-                        }
-                    } catch (error) {
-                        console.error('Delete error:', error);
-                        showToast('Error deleting song', 'error');
+                    const res = await authenticatedFetch(`http://127.0.0.1:5000/api/songs/delete/${currentSongIdToDelete}`, { method: 'DELETE' });
+                    if (res && res.ok) {
+                        showToast('Song deleted successfully.', 'success');
+                        loadDashboardData();
+                    } else {
+                        showToast('Failed to delete song.', 'error');
                     }
                 }
                 deleteModal.classList.add('hidden');
-                currentSongIdToDelete = null;
             });
 
-            // --- Event Delegation for Song List ---
-            // Update the play button click handler
-songList.addEventListener('click', async (e) => {
-    const target = e.target.closest('button');
-    if (!target) return;
-
-    // Play/Pause button
-    if (target.classList.contains('preview-btn')) {
-        const songId = target.dataset.songId;
-        const playIcon = target.querySelector('.play-icon');
-        
-        if (currentlyPlayingSong === songId) {
-            // Pause current song
-            stopCurrentlyPlaying();
-        } else {
-            // Stop any currently playing song
-            stopCurrentlyPlaying();
-            
-            try {
-                // Fetch the WAV audio
-                const response = await authenticatedFetch(`/api/songs/play/${songId}`);
-                if (!response) return;
-                
-                const audioBlob = await response.blob();
-                const audioUrl = URL.createObjectURL(audioBlob);
-                
-                audioPlayer.src = audioUrl;
-                audioPlayer.play()
-                    .then(() => {
-                        currentlyPlayingSong = songId;
-                        playIcon.innerHTML = `<path d="M18 12H6M18 12L12 6M18 12L12 18"/>`; // Pause icon
-                        
-                        audioPlayer.onended = () => {
-                            playIcon.innerHTML = `<path d="M6.3 2.841A1.5 1.5 0 004 4.11V15.89a1.5 1.5 0 002.3 1.269l9.344-5.89a1.5 1.5 0 000-2.538L6.3 2.84z"/>`;
-                            currentlyPlayingSong = null;
-                        };
-                    })
-                    .catch(error => {
-                        console.error('Playback failed:', error);
-                        showToast('Error playing audio', 'error');
-                    });
-            } catch (error) {
-                console.error('Error fetching audio:', error);
-                showToast('Error loading audio', 'error');
-            }
-        }
-    }
-                // Delete button
-                else if (target.classList.contains('delete-btn')) {
-                    currentSongIdToDelete = target.dataset.songId;
-                    const songElement = target.closest('.bg-gray-800\\/50');
-                    if (songElement) {
-                        const songTitleElement = songElement.querySelector('p.font-semibold');
-                        const songTitle = songTitleElement ? songTitleElement.textContent : 'this song';
-                        deleteMessage.textContent = `Are you sure you want to delete "${songTitle}"?`;
-                        deleteModal.classList.remove('hidden');
-                    } else {
-                        console.error('Song element not found');
-                        showToast('Error: Could not find song details', 'error');
-                    }
-                }
-            });
-
-            // --- Modal and Form Logic ---
+            // Profile Update Logic
             updateProfileBtn.addEventListener('click', () => updateModal.classList.remove('hidden'));
             cancelUpdateBtn.addEventListener('click', () => updateModal.classList.add('hidden'));
-            
             document.getElementById('update-photo-upload').addEventListener('change', function(e) {
                 const file = e.target.files[0];
                 if (file) {
                     const reader = new FileReader();
-                    reader.onload = (event) => {
-                        document.getElementById('update-photo-preview').src = event.target.result;
-                        newPhotoBase64 = event.target.result;
+                    reader.onload = (ev) => {
+                        document.getElementById('update-photo-preview').src = ev.target.result;
+                        newPhotoBase64 = ev.target.result;
                     };
                     reader.readAsDataURL(file);
                 }
             });
-
             updateForm.addEventListener('submit', async (e) => {
                 e.preventDefault();
                 const payload = {
@@ -364,44 +289,28 @@ songList.addEventListener('click', async (e) => {
                     current_password: document.getElementById('current-password').value,
                     new_password: document.getElementById('new-password').value,
                 };
-                if (newPhotoBase64) {
-                    payload.profile_photo = newPhotoBase64;
-                }
-
-                try {
-                    const response = await authenticatedFetch('/api/user/update', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(payload)
-                    });
-
-                    if (response) {
-                        const result = await response.json();
-                        if (response.ok) {
-                            showToast(result.message, 'success');
-                            updateModal.classList.add('hidden');
-                            loadDashboardData();
-                        } else {
-                            showToast(result.message, 'error');
-                        }
-                    }
-                } catch (error) {
-                    console.error('Update error:', error);
-                    showToast('Error updating profile', 'error');
+                if (newPhotoBase64) payload.profile_photo = newPhotoBase64;
+                
+                const res = await authenticatedFetch('http://127.0.0.1:5000/api/user/update', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                if (res && res.ok) {
+                    showToast('Profile updated!', 'success');
+                    updateModal.classList.add('hidden');
+                    loadDashboardData();
+                } else {
+                    showToast('Update failed. Check password.', 'error');
                 }
             });
 
             logoutBtn.addEventListener('click', async () => {
-                try {
-                    await authenticatedFetch('/api/logout', { method: 'POST' });
-                    window.location.href = '/';
-                } catch (error) {
-                    console.error('Logout error:', error);
-                    showToast('Error during logout', 'error');
-                }
+                await authenticatedFetch('http://127.0.0.1:5000/api/logout', { method: 'POST' });
+                window.location.href = 'http://127.0.0.1:5000/';
             });
 
-            // --- Initial Load ---
+            // Start
             loadDashboardData();
         });
     </script>
